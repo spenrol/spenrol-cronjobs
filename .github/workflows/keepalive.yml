@@ -1,0 +1,23 @@
+name: Keep Spenrol Backend Alive
+
+on:
+  schedule:
+    - cron: '*/14 * * * *'  # every 14 minutes
+  workflow_dispatch:         # allows manual trigger from GitHub UI
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ping Spenrol API
+        run: |
+          response=$(curl --silent --write-out "HTTPSTATUS:%{http_code}" --max-time 30 ${{ secrets.BACKEND_URL }})
+          status=$(echo $response | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
+          echo "HTTP Status: $status"
+          if [ $status -ge 200 ] && [ $status -lt 400 ]; then
+            echo "Backend is awake ✓"
+          else
+            echo "Backend returned unexpected status: $status"
+            exit 1
+          fi
